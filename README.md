@@ -1,58 +1,86 @@
-<!-- <p align="center">
-   <img alt="is-a.dev Banner" src="https://raw.githubusercontent.com/is-a-dev/register/main/media/banner.png">
-</p> -->
-
 <p align="center">
-   <img height="350" alt="is-a.dev Banner" src="https://raw.githubusercontent.com/is-a-dev/register/main/media/banner.png">
+  <img height="350" alt="is-a.dev banner" src="https://raw.githubusercontent.com/is-a-dev/register/main/media/banner.png">
 </p>
 
-<p align="center">
-   <img alt="Domains" src="https://img.shields.io/github/directory-file-count/is-a-dev/register/domains?color=5c46eb&label=domains&style=for-the-badge">
-   <img alt="Open Pull Requests" src="https://img.shields.io/github/issues-raw/is-a-dev/register?color=5c46eb&label=issues&style=for-the-badge">
-   <img alt="Open Issues" src="https://img.shields.io/github/issues-pr-raw/is-a-dev/register?color=5c46eb&label=pull%20requests&style=for-the-badge">
-   <br>
-</p>
+<h1 align="center">is-a.dev domain registry</h1>
 
-<h1 align="center">is-a.dev</h1>
+<p align="center">A public registry of <code>.is-a.dev</code> subdomains for software developers' personal websites.</p>
 
-<p align="center"><strong>is-a.dev</strong> is a service that allows developers to get a sweet-looking <code>.is-a.dev</code> subdomain for their personal websites.</p>
-<p align="center">📕 <a href="https://docs.is-a.dev">Documentation</a> &bull; 📜 <a href="https://is-a.dev/terms">Terms of Service</a> &bull; 💖 <a href="https://donate.is-a.dev">Donate</a></p>
+<p align="center"><a href="https://docs.is-a.dev">Documentation</a> · <a href="https://is-a.dev/terms">Terms of Service</a> · <a href="https://discord.gg/is-a-dev-830872854677422150">Discord</a></p>
 
----
+## What this repository does
 
-## 📢 Announcements
-Please join our [Discord server](https://discord.gg/is-a-dev-830872854677422150) for announcements, service updates, and downtime notifications regarding the service.
+This repository stores one JSON file per registered subdomain in [`domains/`](domains/). [`dnsconfig.js`](dnsconfig.js) reads those files and builds the `is-a.dev` DNS zone for DNSControl. GitHub Actions validate proposed changes, publish DNS changes after they reach `main`, and generate the raw registry data used by the service.
 
-Only critical announcements are posted on GitHub, everything else is posted on our Discord server.
+It is **not** a website hosting platform, registrar, or local DNS server. A merged record points a name at infrastructure you provide; it does not deploy or operate that infrastructure for you.
 
----
+## Request a subdomain
 
-> [!NOTE]
-> We've launched another free subdomain service! Claim your `.is-a.bot` subdomain [here](https://github.com/free-domains/is-a.bot).
+The public request process and complete schema are maintained in the [is-a.dev documentation](https://docs.is-a.dev/). In brief:
 
----
+1. Read the [Terms of Service](https://is-a.dev/terms) and [domain structure guide](https://docs.is-a.dev/domain-structure/).
+2. Fork this repository and add your domain file under `domains/` using the documented filename and JSON structure.
+3. Open a pull request using the repository template. Include a reachable, completed, software-development-related website and the requested ownership/contact details.
+4. Respond to review feedback. A merge is required before the record is published; DNS and caches may take time to update afterward.
 
-# ✏️ Register
-> If you want a visual guide, check out [this blog post](https://blog.wharrison.com.au/2024/07/is-a-dev/).
+The automated checks validate filenames, ownership fields, record types and values, nested-domain ownership, proxy compatibility, and the required pull-request template. Passing checks does not replace maintainer review or the Terms of Service.
 
-- [Fork](https://github.com/is-a-dev/register/fork) the repository.
-- Follow the instructions on our [documentation](https://docs.is-a.dev).
-  - Do not use AI to generate your request, it **WILL** always get it wrong and will delay you getting a domain.
-- Once you open your pull request (PR), it will be reviewed. *Keep an eye on it in case changes are needed!*
-   - If changes have been requested, please make the specified changes otherwise **you will be rejected**.
-- Once your PR is merged, your DNS records should be published with-in a few minutes.
-- Enjoy your new `.is-a.dev` subdomain! Please consider leaving a star ⭐️ to help support us!
+> **Important:** This project does not accept AI-generated domain-registration pull requests. Read [`AGENTS.md`](AGENTS.md) before contributing. Do not put passwords, API keys, or other secrets in a domain file; registry contents and owner contact fields are public.
 
----
+## Work locally
 
-## ⛔ Report Abuse
-If you find any subdomains being abused or breaking our [ToS](https://is-a.dev/terms), please report them by [creating an issue](https://github.com/is-a-dev/register/issues/new?assignees=&labels=report-abuse&projects=&template=report-abuse.md&title=Report+abuse) with relevant evidence.
+The test suite is Node.js-based. From a fresh checkout:
 
----
+```sh
+git clone https://github.com/is-a-dev/register.git
+cd register
+npm ci
+npm test
+```
 
-## 💖 Supporting Us
-If you would like to help support us, please consider [donating](https://donate.is-a.dev) or [sponsoring](https://donate.is-a.dev/sponsor).
+Useful focused checks are also available:
 
-We are proudly supported by Cloudflare's [Project Alexandria](https://www.cloudflare.com/lp/project-alexandria) program for our DNS management.
+```sh
+npm run check:reserved-order
+npx prettier --check README.md dnsconfig.js tests util
+```
 
-We would like to thank all of our current and past [supporters](https://is-a.dev/thanks).
+`npm test` runs the AVA tests in `tests/*.test.js`. The test suite reads the complete `domains/` directory, so run it from the repository root with the registry data present. The DNSControl workflow uses DNSControl 4.14.0 to check `dnsconfig.js`; the local Node test commands do not publish DNS changes.
+
+## Domain file shape
+
+Use the documentation for the authoritative schema and allowed values. A minimal **illustrative** record looks like this (replace the placeholder values with your own, and do not submit this example unchanged):
+
+```json
+{
+  "owner": {
+    "username": "your-github-username"
+  },
+  "records": {
+    "CNAME": "your-site.example.com"
+  }
+}
+```
+
+Supported record handling in `dnsconfig.js` includes `A`, `AAAA`, `CAA`, `CNAME`, `DS`, `MX`, `NS`, `SRV`, `TLSA`, `TXT`, and `URL`. The validators apply additional restrictions, including public-address checks, hostname validation, reserved/internal-name checks, and safeguards around proxying and self-references. Follow the [domain structure documentation](https://docs.is-a.dev/domain-structure/) rather than inferring a valid submission from this short example.
+
+## Architecture and automation
+
+```text
+domains/*.json
+      │
+      ├── tests/*.test.js ──► AVA validation in CI
+      │
+      └── dnsconfig.js ─────► DNSControl check/push ──► Cloudflare DNS
+
+ domains/*.json ────────────► util/raw-api.js ────────► raw registry workflow
+```
+
+- [`tests/`](tests/) contains data, record, proxy, ownership, and pull-request checks.
+- [`util/`](util/) contains reserved-name management, raw API generation, and pull-request validation helpers.
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs `npm ci` and AVA; DNSControl checks run when relevant configuration changes.
+- [`.github/workflows/publish.yml`](.github/workflows/publish.yml) pushes the zone after an eligible change on `main`, using a repository secret. Contributors should never need that credential locally.
+
+## Abuse reports and service updates
+
+Report suspected abuse through the [report-abuse issue template](https://github.com/is-a-dev/register/issues/new?assignees=&labels=report-abuse&projects=&template=report-abuse.md&title=Report+abuse) with relevant evidence. Service announcements and downtime notices are posted in the [Discord server](https://discord.gg/is-a-dev-830872854677422150). For policy details, see the [Terms of Service](https://is-a.dev/terms).
